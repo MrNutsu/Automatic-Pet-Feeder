@@ -1,0 +1,8 @@
+services:
+  feeder-web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro   # drop your trained best.pt in ./models to use it
+    restart: unless-stopped

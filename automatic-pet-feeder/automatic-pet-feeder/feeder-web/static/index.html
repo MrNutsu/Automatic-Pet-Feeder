@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatic Feeder - AI test</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c1f24; --muted:#5d6673; --accent:#2f6fed; --ok:#1e8e4e; --err:#c0392b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14171b; --card:#1d2127; --text:#eef0f3; --muted:#a3acb9; --accent:#6c9bff; --ok:#4cc38a; --err:#ff7b6b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background:var(--bg); color:var(--text); min-height:100vh; display:flex; justify-content:center; }
+  main { width:100%; max-width:520px; padding:24px 18px 40px; }
+  h1 { font-size:1.5rem; margin:8px 0 6px; }
+  p.lead { color:var(--muted); margin:0 0 22px; line-height:1.45; }
+  .card { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+  label.btn { display:block; text-align:center; background:var(--accent); color:#fff; font-size:1.1rem;
+              font-weight:600; padding:18px; border-radius:14px; cursor:pointer; }
+  input[type=file] { display:none; }
+  #status { margin-top:16px; text-align:center; color:var(--muted); min-height:1.4em; }
+  #status.error { color:var(--err); }
+  #result { display:none; margin-top:18px; }
+  #result img { width:100%; border-radius:12px; display:block; }
+  #chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip { background:var(--bg); border-radius:999px; padding:8px 14px; font-weight:600; }
+  .chip span { color:var(--ok); margin-left:6px; }
+  .spinner { display:inline-block; width:18px; height:18px; border:3px solid var(--muted); border-top-color:transparent;
+             border-radius:50%; animation:spin 1s linear infinite; vertical-align:-3px; margin-right:8px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Automatic Feeder</h1>
+  <p class="lead">Take or choose a photo of a cat, a dog or a person and see what our AI model recognizes.</p>
+
+  <div class="card">
+    <label class="btn" for="file">Choose or take a photo</label>
+    <input id="file" type="file" accept="image/*">
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="result">
+      <img id="out" alt="Photo with the detections drawn on it">
+      <div id="chips"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const input = document.getElementById("file");
+const statusEl = document.getElementById("status");
+const result = document.getElementById("result");
+const out = document.getElementById("out");
+const chips = document.getElementById("chips");
+
+function setStatus(text, kind) {
+  statusEl.className = kind || "";
+  statusEl.textContent = "";
+  if (kind === "loading") {
+    const s = document.createElement("span");
+    s.className = "spinner";
+    statusEl.appendChild(s);
+  }
+  statusEl.appendChild(document.createTextNode(text));
+}
+
+// Phone photos are large, so shrink them before uploading (faster on event Wi-Fi).
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+    return blob || file;
+  } catch (e) {
+    return file; // browser could not decode it: let the server try
+  }
+}
+
+input.addEventListener("change", async () => {
+  const file = input.files[0];
+  if (!file) return;
+  result.style.display = "none";
+  setStatus("Analyzing your photo...", "loading");
+  try {
+    const form = new FormData();
+    form.append("image", await shrink(file), "photo.jpg");
+    const res = await fetch("/predict", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Server error");
+
+    out.src = data.image;
+    chips.textContent = "";
+    for (const d of data.detections) {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = d.label.charAt(0).toUpperCase() + d.label.slice(1);
+      const pct = document.createElement("span");
+      pct.textContent = Math.round(d.confidence * 100) + "%";
+      chip.appendChild(pct);
+      chips.appendChild(chip);
+    }
+    result.style.display = "block";
+    setStatus(data.detections.length
+      ? "Tap the button to try another photo."
+      : "Nothing recognized. Try a photo where the animal is bigger and well lit.");
+  } catch (e) {
+    setStatus(e.message || "Could not reach the server. Check your Wi-Fi.", "error");
+  } finally {
+    input.value = ""; // lets the same photo be chosen again
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+ultralytics
+flask
+gunicorn
+pillow
