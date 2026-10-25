@@ -1,19 +1,10 @@
-"""Webcam test for the cat / dog / person detector.
-
-    python data_training.py                       webcam with the pretrained YOLO11 (no dataset needed)
-    python data_training.py --train               unzip the dataset, train, then open the webcam with your new model
-    python data_training.py --weights best.pt     webcam with a model you already trained
-
-Install once:  pip install ultralytics opencv-python
-Press q in the video window to quit.
-"""
 import argparse
 import sys
 import zipfile
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent  # everything is looked up next to this file
-WANTED = {"cat", "cats", "dog", "person"}  # 'car' is in the dataset but ignored on purpose
+HERE = Path(__file__).resolve().parent 
+WANTED = {"cats", "dog", "person"}
 
 
 def find_zip(zip_arg):
@@ -72,7 +63,7 @@ def train(zip_arg, model_name, epochs):
 def open_camera(preferred):
     import cv2
 
-    for idx in dict.fromkeys([preferred, 0, 1, 2, 3]):  # first one that really delivers frames
+    for idx in dict.fromkeys([preferred, 0, 1, 2, 3]):
         cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW) if sys.platform.startswith("win") else cv2.VideoCapture(idx)
         if cap.isOpened() and cap.read()[0]:
             print(f"Using camera {idx}")
@@ -99,7 +90,7 @@ def webcam(weights, cam, conf):
             break
         r = model(frame, conf=conf, classes=ids, verbose=False)[0]
         found = sorted({model.names[int(c)] for c in r.boxes.cls})
-        if found != last:  # only print when something changes
+        if found != last: 
             print("Detected:", found or "nothing")
             last = found
         try:
@@ -131,7 +122,7 @@ def main():
         if not weights.exists() and (HERE / weights).exists():
             weights = HERE / weights
     else:
-        weights = "yolo11n.pt"  # downloaded automatically the first time
+        weights = "yolo11n.pt" 
     webcam(weights, a.cam, a.conf)
 
 
