@@ -10,7 +10,7 @@ Developed as an Integrator Project (PIE4) at IFSP Salto.
 
 <div align="center">
   <img align="center" alt="Coding" width="100%" height="100%" src="https://github.com/MrNutsu/Automatic-Pet-Feeder/blob/main/preliminary%20results.png"/>
-  <p align="right"><a href="https://github.com/MrNutsu" name="Nutsu">mak</a></p>
+  <p align="right"><a href="https://github.com/MrNutsu" name="Nutsu">Nutsu</a></p>
 </div>
 
 ## What's inside
