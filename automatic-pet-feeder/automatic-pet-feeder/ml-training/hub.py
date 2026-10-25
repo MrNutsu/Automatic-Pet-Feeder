@@ -1,19 +1,12 @@
-"""Feeder test hub: pick a model, then test with the webcam or analyze an image.
-
-    python hub.py
-
-Needs:  pip install ultralytics opencv-python
-Linux:  sudo apt install python3-tk      (only if Python says tkinter is missing)
-"""
 import argparse
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent  # models and downloads live next to this file
-WANTED = {"cat", "cats", "dog", "person"}  # 'car' may exist in the model but is ignored on purpose
-PRETRAINED = "yolo11n.pt"  # downloaded automatically the first time
+HERE = Path(__file__).resolve().parent 
+WANTED = {"cat", "cats", "dog", "person"} 
+PRETRAINED = "yolo11n.pt"
 IMG_TYPES = [("Images", "*.jpg *.jpeg *.png *.webp *.bmp"), ("All files", "*.*")]
 
 
@@ -27,7 +20,7 @@ def trained_weights():
 def open_camera(preferred):
     import cv2
 
-    for idx in dict.fromkeys([preferred, 0, 1, 2, 3]):  # first one that really delivers frames
+    for idx in dict.fromkeys([preferred, 0, 1, 2, 3]):
         cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW) if sys.platform.startswith("win") else cv2.VideoCapture(idx)
         if cap.isOpened() and cap.read()[0]:
             print(f"Using camera {idx}")
@@ -52,7 +45,7 @@ def run_webcam(weights, conf, cam):
             break
         r = model(frame, conf=conf, classes=ids, verbose=False)[0]
         found = sorted({model.names[int(c)] for c in r.boxes.cls})
-        if found != last:  # only print when something changes
+        if found != last: 
             print("Detected:", found or "nothing")
             last = found
         try:
@@ -123,11 +116,11 @@ def run_hub():
             found = [f"{model.names[int(b.cls)]} {float(b.conf):.2f}" for b in r.boxes]
             img = Image.fromarray(r.plot()[:, :, ::-1])  # BGR -> RGB
             img.thumbnail((780, 500))
-            state["photo"] = ImageTk.PhotoImage(img)  # keep a reference or Tk drops the picture
+            state["photo"] = ImageTk.PhotoImage(img) 
             picture.config(image=state["photo"], text="")
             status.set("Detected: " + ", ".join(found) if found
                        else "Nothing detected. Try lowering the confidence slider.")
-        except Exception as e:  # e.g. corrupted image
+        except Exception as e:  # corrupted image
             status.set(f"Could not analyze that file: {e}")
 
     def on_close():
